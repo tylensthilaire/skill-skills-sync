@@ -1,0 +1,15 @@
+# Build artifacts — generated from SKILL.md by build.sh, attached to GitHub Releases, never committed
+*.plugin
+dist/
+
+# Agent config – don't track agent-specific configs, not everyone uses the same agent
+.claude
+
+# OS / editor cruft – don't track OS-specific or editor-specific files, not everyone uses the same OS or editor.
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Python cruft – bytecode caches generated from the stdlib scripts, never committed.
+__pycache__/
+*.pyc
