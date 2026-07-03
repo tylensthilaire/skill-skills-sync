@@ -1,4 +1,7 @@
 ---
+source: https://github.com/tylensthilaire/skill-skills-sync.git
+source-path: skills/skills-sync
+ref: v0.1.0
 name: skills-sync
 description: >-
   Install, verify, and update the pinned skills a project lists in skills.json,
