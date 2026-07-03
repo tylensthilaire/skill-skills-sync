@@ -127,5 +127,5 @@ cat <<DONE
 
 released $NAME $REF locally. Next (outward-facing — run when ready):
   git push --follow-tags
-  gh release create $REF dist/$NAME.plugin --title "$NAME $REF" --notes "…"
+  gh release create $REF dist/$NAME.plugin --title "$NAME $REF" --generate-notes
 DONE

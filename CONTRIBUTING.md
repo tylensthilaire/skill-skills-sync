@@ -86,7 +86,7 @@ Release, so the outward-facing steps stay in your hands.
 
 # when ready (outward-facing):
 git push --follow-tags
-gh release create v0.1.0 dist/skills-sync.plugin --title "skills-sync v0.1.0" --notes "…"
+gh release create v0.1.0 dist/skills-sync.plugin --title "skills-sync v0.1.0" --generate-notes
 ```
 
 It refuses to run on a dirty tree, without an `origin` remote, if the tag
