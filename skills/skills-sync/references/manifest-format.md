@@ -51,8 +51,8 @@ the manifest's `ref` field and stays checkout-able; it is not the human-facing
 `metadata.version` (which may read `0.1.0` while the tag is `v0.1.0`). Skills
 that carry this frontmatter can be picked up by `install.py init` to create a
 manifest from scratch — registering themselves and any other such skills
-already on disk (trust-on-first-use pins). Write it at release time, never by
-hand.
+already on disk, each pin verified against its stamped ref before it lands.
+Write it at release time, never by hand.
 
 ## Skills declaring dependencies
 

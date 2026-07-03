@@ -94,11 +94,14 @@ this skill instead. Create one the first time a skill needs it.
 Run `python3 .../scripts/install.py init`: it creates `skills.json`, registers
 this skill from its own origin frontmatter (documented in
 `references/manifest-format.md`), and adopts any other skills already in the
-skills folder that carry origin frontmatter, pinning their current local
-hashes. Tell the user plainly that init pins are **trust-on-first-use** — they
-vouch for the copies already on disk, not for independently reviewed ones.
-Skills without origin frontmatter are reported and left for the user to add by
-hand.
+skills folder that carry origin frontmatter. Each pin is **verified before it
+lands** — the skill is fetched at its stamped `ref` and the manifest pins the
+hash of *that* release, so init can never write a (ref, hash) pair the next
+`install` would reject. A local copy that differs from its ref is still adopted
+(pinned to the release) but flagged as drifted — tell the user to run
+`install <name>` to sync it, unless it's a deliberate local fork. A ref that
+can't be fetched is skipped, and skills without origin frontmatter are reported;
+both are left for the user to pin by hand.
 
 ## Updating skills
 

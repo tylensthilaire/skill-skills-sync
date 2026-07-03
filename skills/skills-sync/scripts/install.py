@@ -66,7 +66,11 @@ def select(m: dict, name: str) -> list:
 
 
 def fetch(entry: dict, workdir: Path) -> Path:
-    """Clone entry's source at its pinned ref; return path to the skill folder."""
+    """Clone entry's source at its pinned ref; return path to the skill folder.
+    Raises subprocess.CalledProcessError if the clone or checkout fails (an
+    unreachable source or ref) and FileNotFoundError if the ref carries no
+    SKILL.md at the entry's path — callers decide whether that aborts (install)
+    or just skips the entry (init)."""
     dest = workdir / entry["name"]
     subprocess.run(
         ["git", "clone", "--quiet", "--filter=blob:none", entry["source"], str(dest)],
@@ -78,7 +82,8 @@ def fetch(entry: dict, workdir: Path) -> Path:
     )
     skill_dir = dest / entry.get("path", ".")
     if not (skill_dir / "SKILL.md").exists():
-        sys.exit(f"error: {entry['name']}: no SKILL.md at {entry.get('path', '.')} in {entry['source']}@{entry['ref']}")
+        raise FileNotFoundError(
+            f"{entry['name']}: no SKILL.md at {entry.get('path', '.')} in {entry['source']}@{entry['ref']}")
     return skill_dir
 
 
@@ -88,7 +93,10 @@ def cmd_install(manifest_path: str, name: str = None) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         for entry in select(m, name):
             name = entry["name"]
-            skill_dir = fetch(entry, Path(tmp))
+            try:
+                skill_dir = fetch(entry, Path(tmp))
+            except FileNotFoundError as e:
+                sys.exit(f"error: {e}")
             actual = dir_hash(skill_dir)
             pinned = entry.get("hash")
             if pinned and actual != pinned:
@@ -214,47 +222,68 @@ def read_origin(skill_dir: Path) -> dict:
 def cmd_init(manifest_path: str) -> None:
     """Create skills.json where none exists: self-register from this skill's
     own origin frontmatter, then adopt any other skills that have it already
-    present in the default target folder. Adopted pins are trust-on-first-use —
-    they pin the copy already on disk, not an independently reviewed one."""
+    present in the default target folder. Each pin is verified before it lands
+    — the skill is fetched at its stamped `ref` and the manifest pins the hash
+    of *that* release, not of whatever is on disk. So init can never write a
+    (ref, hash) pair the next `install` would reject: a local copy that differs
+    from its ref is still adopted (pinned to the release) but flagged, and a ref
+    that can't be fetched is skipped rather than pinned unverified."""
     mp = Path(manifest_path)
     if mp.exists():
         sys.exit(f"error: {mp} already exists — nothing to init")
     target = Path(".claude/skills")
-    entries, no_origin, needs_ref = [], [], []
+    entries, no_origin, needs_ref, unreachable, drifted = [], [], [], [], []
     own_dir = Path(__file__).resolve().parent.parent
     candidates = [own_dir]
     if target.exists():
         candidates += [d for d in sorted(target.iterdir())
                        if d.is_dir() and d.resolve() != own_dir.resolve()]
     seen = set()
-    for d in candidates:
-        origin = read_origin(d)
-        name = origin.get("name", d.name)
-        if name in seen:
-            continue
-        seen.add(name)
-        if not origin:
-            if (d / "SKILL.md").exists():
-                no_origin.append(d.name)
-            continue
-        ref = origin.get("ref")
-        if not ref:
-            # Has origin frontmatter but no checkout-able ref — don't invent
-            # one; a bogus ref would only fail the next `install`. Flag it.
-            needs_ref.append(name)
-            continue
-        entries.append({
-            "name": name,
-            "source": origin["source"],
-            "path": origin.get("source-path", "."),
-            "ref": ref,
-            "hash": dir_hash(d),
-        })
+    with tempfile.TemporaryDirectory() as tmp:
+        for d in candidates:
+            origin = read_origin(d)
+            name = origin.get("name", d.name)
+            if name in seen:
+                continue
+            seen.add(name)
+            if not origin:
+                if (d / "SKILL.md").exists():
+                    no_origin.append(d.name)
+                continue
+            ref = origin.get("ref")
+            if not ref:
+                # Has origin frontmatter but no checkout-able ref — don't invent
+                # one; a bogus ref would only fail the next `install`. Flag it.
+                needs_ref.append(name)
+                continue
+            entry = {
+                "name": name,
+                "source": origin["source"],
+                "path": origin.get("source-path", "."),
+                "ref": ref,
+            }
+            # Verify before pinning: pin the hash of the fetched release, not the
+            # local copy's, so the (ref, hash) pair is always self-consistent. A
+            # ref we can't reach (unpushed tag, offline, bad path) can't be
+            # verified — skip it rather than mint an unverifiable pin.
+            try:
+                ref_hash = dir_hash(fetch(entry, Path(tmp)))
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                unreachable.append((name, ref))
+                continue
+            if dir_hash(d) != ref_hash:
+                drifted.append((name, ref))
+            entry["hash"] = ref_hash
+            entries.append(entry)
     mp.write_text(json.dumps(
         {"targets": [str(target)], "skills": entries}, indent=2) + "\n")
-    print(f"created {mp} with {len(entries)} entr{'y' if len(entries)==1 else 'ies'} (trust-on-first-use pins)")
+    print(f"created {mp} with {len(entries)} entr{'y' if len(entries)==1 else 'ies'} (each verified against its pinned ref)")
     for e in entries:
         print(f"  registered  {e['name']}  {e['ref']}")
+    for n, ref in drifted:
+        print(f"  adopted     {n}  (local copy differs from {ref} — pinned the release; run `install {n}` to sync, or it's a local fork)")
+    for n, ref in unreachable:
+        print(f"  skipped     {n}  (could not fetch {ref} to verify — pin it by hand once the ref is reachable)")
     for n in no_origin:
         print(f"  skipped     {n}  (no origin frontmatter — add it to the manifest by hand)")
     for n in needs_ref:
