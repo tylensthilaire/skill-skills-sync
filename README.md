@@ -1,7 +1,7 @@
 # Skills Sync Agent Skill
 
 Install, update and verify the skills you use in a project across different 
-devices and team memners. skills-sync makes sure youre always useing the same
+devices and team members. skills-sync makes sure you're always using the same
 version, from the same source.
 
 **Version:** 0.1.0 · **License:** Artistic-2.0
