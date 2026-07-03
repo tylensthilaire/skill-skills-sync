@@ -24,7 +24,9 @@ skill acts on that manifest:
   that are missing, unpinned, or a local fork.
 - **init** — create a `skills.json` where none exists, from the origin
   frontmatter (`source` / `source-path` / `ref`) that stamped skills carry.
-  These are trust-on-first-use pins.
+  Each entry is verified as it's added: the skill is fetched at its stamped
+  `ref` and pinned to that release's hash, not the local copy's, so init can
+  never write a pin the next `install` would reject.
 - **list** — show manifest entries and their installed status.
 
 It also copies any conventions a freshly installed skill carries (the docs in
@@ -52,8 +54,9 @@ itself.
 > then run its `init` to create `skills.json`.
 
 `init` creates the manifest and self-registers skills-sync from its stamped
-origin frontmatter (a trust-on-first-use pin). From then on skills-sync manages
-itself and every other skill you add — `install`, `update`, `verify`.
+origin frontmatter, verifying each pin against its ref as it goes. From then on
+skills-sync manages itself and every other skill you add — `install`, `update`,
+`verify`.
 
 **Manually** The same steps, if you'd rather not hand it to an agent:
 
