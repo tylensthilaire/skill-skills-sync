@@ -117,6 +117,14 @@ if ! "$ROOT/build.sh"; then
   exit 1
 fi
 
+# Publish the skills.json pin hash — the value skills-sync verifies on install
+# — computed with skills-sync's own hasher so it can't drift from what consumers
+# check. Over the stamped working tree, which is exactly what the tag captures.
+echo "==> computing skills.json pin hash"
+HASH="$(python3 "$SKILL_DIR/scripts/install.py" hash "$SKILL_DIR")"
+printf '%s\n' "$HASH" > "$ROOT/dist/$NAME.sha256"
+echo "    $HASH  ->  dist/$NAME.sha256"
+
 # Commit + tag ---------------------------------------------------------------
 echo "==> committing"
 git commit -qam "$MSG"
@@ -127,5 +135,5 @@ cat <<DONE
 
 released $NAME $REF locally. Next (outward-facing — run when ready):
   git push --follow-tags
-  gh release create $REF dist/$NAME.plugin --title "$NAME $REF" --generate-notes
+  gh release create $REF dist/$NAME.plugin dist/$NAME.sha256 --title "$NAME $REF" --generate-notes
 DONE
