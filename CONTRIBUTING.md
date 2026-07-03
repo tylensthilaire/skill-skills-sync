@@ -75,9 +75,8 @@ it's a maturing tool.
 Bump `metadata.version` in `skills/skills-sync/SKILL.md` to the version you're
 releasing (SemVer) and commit any pending work so the tree is clean. Then
 `release.sh` runs the whole local sequence — stamp → review → build → commit →
-tag — and writes the skills.json pin hash to `dist/skills-sync.sha256` to
-publish alongside the plugin. It does **local work only**: it never pushes and
-never creates the GitHub Release, so the outward-facing steps stay in your hands.
+tag. It does **local work only**: it never pushes and never creates the GitHub
+Release, so the outward-facing steps stay in your hands.
 
 ```bash
 ./release.sh v0.1.0            # stamp, show the diff, prompt, then build + commit + tag
@@ -87,7 +86,7 @@ never creates the GitHub Release, so the outward-facing steps stay in your hands
 
 # when ready (outward-facing):
 git push --follow-tags
-gh release create v0.1.0 dist/skills-sync.plugin dist/skills-sync.sha256 --title "skills-sync v0.1.0" --generate-notes
+gh release create v0.1.0 dist/skills-sync.plugin --title "skills-sync v0.1.0" --generate-notes
 ```
 
 It refuses to run on a dirty tree, without an `origin` remote, if the tag

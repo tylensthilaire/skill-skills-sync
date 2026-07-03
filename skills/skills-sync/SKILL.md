@@ -56,8 +56,7 @@ The script prints what it did and any hash to pin; on a hash mismatch it
 refuses and says why. `verify` reports each installed copy as `ok`, `modified`
 (a local fork), or `missing`. `update` is read-only — it reports newer tags
 but changes nothing. `hash` prints a folder's content hash — the value pinned
-as `hash` in `skills.json` — which a release publishes and anyone can recompute
-to check a copy by hand.
+as `hash` in `skills.json` — which anyone can recompute to check a copy by hand.
 
 **Manifest present but skills not installed** (e.g. a freshly cloned project):
 run `install`.
