@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# release.sh — cut a versioned release locally: stamp -> review -> commit -> tag -> build.
+# release.sh — cut a versioned release locally: stamp -> review -> build -> commit -> tag.
 #
 #   ./release.sh v0.1.0                    # stamp, show diff, prompt, then commit + tag + build
 #   ./release.sh v0.1.0 -m "…"             # custom commit/tag message
@@ -16,9 +16,9 @@ usage() {
   cat >&2 <<'U'
 usage: ./release.sh vX.Y.Z [-m msg] [-y] [--skip-version-check]
 
-Cuts a versioned release locally: stamp origin frontmatter -> review -> commit -> tag ->
-build. Never pushes and never creates the GitHub Release — those commands are
-printed for you to run. Prefer tagging in the GitHub UI? See CONTRIBUTING.md.
+Cuts a versioned release locally: stamp origin frontmatter -> review -> build ->
+commit -> tag. Never pushes and never creates the GitHub Release — those commands
+are printed for you to run. Prefer tagging in the GitHub UI? See CONTRIBUTING.md.
 U
 }
 
@@ -100,7 +100,7 @@ echo "==> review the stamp diff:"
 git --no-pager diff -- "$SKILL"
 
 if [ "$ASSUME_YES" -eq 0 ]; then
-  printf '\nCommit, tag %s, and build? [y/N] ' "$REF"
+  printf '\nBuild, commit, and tag %s? [y/N] ' "$REF"
   read -r reply || reply=""
   case "$reply" in
     y|Y|yes|YES) ;;
@@ -108,13 +108,20 @@ if [ "$ASSUME_YES" -eq 0 ]; then
   esac
 fi
 
-# Commit + tag + build -------------------------------------------------------
+# Build + validate first — a bad bundle must abort here, before we commit or tag.
+# (A post-tag build failure would strand the tag on an unbuildable commit.)
+echo "==> building plugin"
+if ! "$ROOT/build.sh"; then
+  echo "error: build/validation failed — nothing committed or tagged." >&2
+  echo "       the stamp is in your working tree; revert with:  git checkout -- $SKILL" >&2
+  exit 1
+fi
+
+# Commit + tag ---------------------------------------------------------------
 echo "==> committing"
 git commit -qam "$MSG"
 echo "==> tagging $REF"
 git tag -a "$REF" -m "$MSG"
-echo "==> building plugin"
-"$ROOT/build.sh"
 
 cat <<DONE
 

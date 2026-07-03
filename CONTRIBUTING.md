@@ -74,8 +74,8 @@ it's a maturing tool.
 
 Bump `metadata.version` in `skills/skills-sync/SKILL.md` to the version you're
 releasing (SemVer) and commit any pending work so the tree is clean. Then
-`release.sh` runs the whole local sequence — stamp → review → commit → tag →
-build. It does **local work only**: it never pushes and never creates the GitHub
+`release.sh` runs the whole local sequence — stamp → review → build → commit →
+tag. It does **local work only**: it never pushes and never creates the GitHub
 Release, so the outward-facing steps stay in your hands.
 
 ```bash
