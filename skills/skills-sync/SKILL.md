@@ -45,6 +45,7 @@ python3 <this-skill's-folder>/scripts/install.py install [name]   # fetch, verif
 python3 <this-skill's-folder>/scripts/install.py update  [name]   # report refs newer than the pin
 python3 <this-skill's-folder>/scripts/install.py verify  [name]   # installed copies vs manifest hashes
 python3 <this-skill's-folder>/scripts/install.py list    [name]   # manifest entries and their status
+python3 <this-skill's-folder>/scripts/install.py hash    [path]   # print a folder's content hash (skills.json pin)
 ```
 
 `[name]` is optional: omit it to act on every manifest entry, or pass one
@@ -54,7 +55,9 @@ other than `./skills.json`.
 The script prints what it did and any hash to pin; on a hash mismatch it
 refuses and says why. `verify` reports each installed copy as `ok`, `modified`
 (a local fork), or `missing`. `update` is read-only — it reports newer tags
-but changes nothing.
+but changes nothing. `hash` prints a folder's content hash — the value pinned
+as `hash` in `skills.json` — which a release publishes and anyone can recompute
+to check a copy by hand.
 
 **Manifest present but skills not installed** (e.g. a freshly cloned project):
 run `install`.

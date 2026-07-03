@@ -2,11 +2,12 @@
 """skills-sync: install pinned skills from skills.json.
 
 Commands (NAME is an optional skill name; omit it to act on every entry):
-  init             create skills.json where none exists (self-register + adopt, TOFU pins)
+  init             create skills.json where none exists (self-register + adopt, verified pins)
   install [NAME]   fetch at the pinned ref, verify hash, copy into targets
   update  [NAME]   report release tags newer than the pinned ref (read-only)
   verify  [NAME]   compare installed copies against manifest hashes
   list    [NAME]   show manifest entries and their installed status
+  hash    [PATH]   print a skill folder's content hash (the value skills.json pins)
 
 Options:
   --manifest PATH  use a manifest other than ./skills.json
@@ -25,13 +26,27 @@ from pathlib import Path
 DEFAULT_MANIFEST = "skills.json"
 
 
+def _ignored(p: Path) -> bool:
+    """Non-source cruft that must not affect a skill's content hash: git
+    internals, Python bytecode caches, and OS metadata. Excluded so the hash
+    tracks the reviewed source, not whatever happens to sit beside it — e.g. a
+    stray __pycache__ can't make `verify` report a false MODIFIED."""
+    return (
+        ".git" in p.parts
+        or "__pycache__" in p.parts
+        or p.suffix == ".pyc"
+        or p.name == ".DS_Store"
+    )
+
+
 def dir_hash(root: Path) -> str:
     """Deterministic content hash of a directory: sha256 over sorted
-    (relative-path, file-sha256) pairs. Ignores .git."""
+    (relative-path, file-sha256) pairs. Ignores git internals, bytecode
+    caches, and OS metadata (see _ignored)."""
     h = hashlib.sha256()
     files = sorted(
         p for p in root.rglob("*")
-        if p.is_file() and ".git" not in p.parts
+        if p.is_file() and not _ignored(p)
     )
     for p in files:
         rel = p.relative_to(root).as_posix()
@@ -145,6 +160,22 @@ def cmd_list(manifest_path: str, name: str = None) -> None:
     for entry in select(m, name):
         pin = entry.get("hash", "UNPINNED")[:19]
         print(f"{entry['name']:<24} {entry['ref']:<12} {pin}  {entry['source']}")
+
+
+def cmd_hash(rest: list) -> None:
+    """Print a skill folder's content hash — the value pinned as `hash` in
+    skills.json. The release process publishes it; a maintainer or consumer can
+    also run it by hand to check a folder against a manifest pin. Defaults to
+    the current directory."""
+    paths = [a for a in rest if not a.startswith("-")]
+    if len(paths) > 1:
+        sys.exit("error: hash takes at most one path")
+    target = Path(paths[0]) if paths else Path(".")
+    if not target.is_dir():
+        sys.exit(f"error: {target} is not a directory")
+    if not (target / "SKILL.md").exists():
+        sys.exit(f"error: {target} has no SKILL.md — not a skill folder")
+    print(dir_hash(target))
 
 
 def version_tuple(ref: str):
@@ -314,6 +345,9 @@ def parse_rest(rest: list):
 def main() -> None:
     argv = sys.argv[1:]
     cmd = argv[0] if argv else "install"
+    if cmd == "hash":
+        cmd_hash(argv[1:])
+        return
     name, manifest = parse_rest(argv[1:])
     if cmd == "init":
         if name:

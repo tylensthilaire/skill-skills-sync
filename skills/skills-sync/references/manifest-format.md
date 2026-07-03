@@ -38,9 +38,11 @@ version. It lives at the project root.
 - **ref** — the pinned git ref: a release tag or a full commit SHA. Never a
   branch name — branches move.
 - **hash** — sha256 content hash of the skill folder at that ref, as printed
-  by `install.py`. This is what guarantees the file that runs is the file
-  that was reviewed. Leave it out on first add; `install.py` prints the hash
-  to pin. Refuse to run skills whose hash does not match.
+  by `install.py` (`install.py hash <folder>` recomputes it, and each release
+  publishes it as a `<name>.sha256` asset). This is what guarantees the file
+  that runs is the file that was reviewed. Leave it out on first add;
+  `install.py` prints the hash to pin. Refuse to run skills whose hash does
+  not match.
 
 ## Origin frontmatter
 
